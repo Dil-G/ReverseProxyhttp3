@@ -42,8 +42,8 @@ class Http3ServerHandler extends Http3RequestStreamInboundHandler {
                     .initialMaxStreamDataBidirectionalLocal(1000000)
                     .build();
 
-            Bootstrap bs = new Bootstrap();
-            channel = bs.group(group)
+            Bootstrap bootstrap = new Bootstrap();
+            channel = bootstrap.group(group)
                     .channel(NioDatagramChannel.class)
                     .handler(codec)
                     .bind(0).sync().channel();

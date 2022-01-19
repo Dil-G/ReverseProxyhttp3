@@ -1,5 +1,4 @@
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
@@ -10,7 +9,6 @@ import io.netty.incubator.codec.http3.Http3;
 import io.netty.incubator.codec.http3.Http3ServerConnectionHandler;
 import io.netty.incubator.codec.quic.*;
 
-import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
 public final class Server {
@@ -51,12 +49,12 @@ public final class Server {
         try {
 //            System.out.println("bootstrap");
 
-            Bootstrap bs = new Bootstrap();
-            bs.group(group)
+            Bootstrap bootstrap = new Bootstrap();
+            bootstrap.group(group)
                     .handler(codec)
                     .channel(NioDatagramChannel.class);
 
-            ChannelFuture f = bs.bind(8080).sync();
+            ChannelFuture f = bootstrap.bind(8080).sync();
             f.channel().closeFuture().sync();
 
         } finally {
