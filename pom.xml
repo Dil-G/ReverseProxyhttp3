@@ -13,26 +13,16 @@
         <maven.compiler.target>11</maven.compiler.target>
     </properties>
     <dependencies>
-        <!-- https://mvnrepository.com/artifact/io.netty.incubator/netty-incubator-codec-quic -->
         <dependency>
             <groupId>io.netty.incubator</groupId>
             <artifactId>netty-incubator-codec-quic</artifactId>
             <version>0.0.20.Final</version>
+            <classifier>linux-x86_64</classifier>
         </dependency>
-
-        <!-- https://mvnrepository.com/artifact/io.netty/netty-all -->
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-all</artifactId>
-            <version>4.1.72.Final</version>
-        </dependency>
-
-        <!-- https://mvnrepository.com/artifact/io.netty.incubator/netty-incubator-codec-http3 -->
         <dependency>
             <groupId>io.netty.incubator</groupId>
             <artifactId>netty-incubator-codec-http3</artifactId>
             <version>0.0.11.Final</version>
         </dependency>
-
     </dependencies>
 </project>
