@@ -1,57 +1,27 @@
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
-import io.netty.incubator.codec.http3.*;
+import io.netty.incubator.codec.http3.Http3;
+import io.netty.incubator.codec.http3.Http3ServerConnectionHandler;
 import io.netty.incubator.codec.quic.*;
-import io.netty.util.CharsetUtil;
-import io.netty.util.ReferenceCountUtil;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
 public final class Server {
-    private static final byte[] CONTENT = "Hello World!\r\n".getBytes(CharsetUtil.US_ASCII);
     private Server() { }
 
     public static void main(String... args) throws Exception {
-        class Http3ServerHandler extends Http3RequestStreamInboundHandler {
-            @Override
-            protected void channelRead(
-                    ChannelHandlerContext ctx, Http3HeadersFrame frame, boolean isLast) {
-                if (isLast) {
-                    writeResponse(ctx);
-                }
-                ReferenceCountUtil.release(frame);
-            }
-
-            @Override
-            protected void channelRead(
-                    ChannelHandlerContext ctx, Http3DataFrame frame, boolean isLast) {
-                if (isLast) {
-                    writeResponse(ctx);
-                }
-                ReferenceCountUtil.release(frame);
-            }
-
-            private void writeResponse(ChannelHandlerContext ctx) {
-                Http3HeadersFrame headersFrame = new DefaultHttp3HeadersFrame();
-                headersFrame.headers().status("200");
-                headersFrame.headers().set("server", "netty");
-                ctx.write(headersFrame);
-                ctx.writeAndFlush(new DefaultHttp3DataFrame(Unpooled.wrappedBuffer(CONTENT)))
-                        .addListener(QuicStreamChannel.SHUTDOWN_OUTPUT);
-            }
-        }
 
         SelfSignedCertificate cert = new SelfSignedCertificate();
         QuicSslContext sslContext = QuicSslContextBuilder.forServer(cert.key(), null, cert.cert())
                 .applicationProtocols(Http3.supportedApplicationProtocols()).build();
+
         ChannelHandler codec = Http3.newQuicServerCodecBuilder()
                 .sslContext(sslContext)
                 .maxIdleTimeout(5000, TimeUnit.MILLISECONDS)
@@ -63,12 +33,14 @@ public final class Server {
                 .handler(new ChannelInitializer<QuicChannel>() {
                     @Override
                     protected void initChannel(QuicChannel ch) {
-                        // Called for each connection
+                        System.out.println("initchannel server");
+
                         ch.pipeline().addLast(new Http3ServerConnectionHandler(
                                 new ChannelInitializer<QuicStreamChannel>() {
-                                    // Called for each request-stream,
+
                                     @Override
                                     protected void initChannel(QuicStreamChannel ch) {
+//                                        System.out.println("inti channel handle adding");
                                         ch.pipeline().addLast(new Http3ServerHandler());
                                     }
                                 }));
@@ -77,12 +49,16 @@ public final class Server {
 
         NioEventLoopGroup group = new NioEventLoopGroup(1);
         try {
+//            System.out.println("bootstrap");
+
             Bootstrap bs = new Bootstrap();
-            Channel channel = bs.group(group)
-                    .channel(NioDatagramChannel.class)
+            bs.group(group)
                     .handler(codec)
-                    .bind(new InetSocketAddress(9999)).sync().channel();
-            channel.closeFuture().sync();
+                    .channel(NioDatagramChannel.class);
+
+            ChannelFuture f = bs.bind(8080).sync();
+            f.channel().closeFuture().sync();
+
         } finally {
             group.shutdownGracefully();
         }
